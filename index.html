@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rukhs Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&family=Bebas+Neue&family=Noto+Sans+Arabic:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root { --accent: #ff4757; --glass: rgba(0, 0, 0, 0.93); }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; font-family: 'Quicksand', sans-serif; height: 100vh; background: #000; color: white; overflow: hidden; display: flex; flex-direction: column; }
+        #bg-image { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background-size: cover; background-position: center; filter: brightness(0.2); transition: 0.5s; }
+        .container { flex: 1; padding: 15px; width: 100%; max-width: 450px; margin: auto; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+        .page { display: none; height: 100%; flex-direction: column; }
+        .page.active { display: flex; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .glass-card { background: var(--glass); border-radius: 20px; padding: 15px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+        .habit-row { background: white; color: black; padding: 12px; border-radius: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-weight: 800; }
+        .nav { background: #000; display: flex; justify-content: space-around; padding: 10px 10px 25px 10px; border-top: 2px solid var(--accent); }
+        .nav-btn { font-size: 1.4rem; cursor: pointer; opacity: 0.3; }
+        .nav-btn.active { opacity: 1; color: var(--accent); }
+        #prog-fill { height: 8px; background: var(--accent); width: 0%; border-radius: 4px; box-shadow: 0 0 10px var(--accent); transition: 0.4s; }
+        .history-item { font-size: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 8px 0; display: flex; justify-content: space-between; }
+        .exp-row { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 12px; margin-bottom: 5px; display: flex; justify-content: space-between; font-size: 0.85rem;}
+        .exp-total { color: var(--accent); font-family: 'Bebas Neue'; font-size: 1.8rem; text-align: center; margin: 10px 0; }
+        .history-date-header {   background: var(--accent);    color: #000;    padding: 5px 10px;    border-radius: 8px;    font-weight: 900;    font-size: 0.75rem;    margin: 15px 0 8px 0;    display: inline-block;}
+        .daily-total-badge {  float: right;    font-family: 'Bebas Neue';    font-size: 1rem;} 
+    </style>
+</head>
+<body>
+
+<div id="bg-image"></div>
+
+<div class="container">
+    <div id="home" class="page active">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-family:'Bebas Neue'; color:var(--accent); font-size:1.4rem;">STREAK: <span id="s-val">0</span> 🔥</div>
+            <div style="background:var(--accent); color:#000; padding:4px 10px; border-radius:10px; font-weight:900; font-size:0.7rem;" onclick="setW()">⚖️ <span id="w-val">--</span> KG</div>
+        </div>
+       
+        <h1 id="char-name" style="font-family:'Bebas Neue'; font-size:2.6rem; margin:5px 0 0 0; color:var(--accent);">STARTING...</h1>
+        <p id="char-title" style="margin:2px 0; font-weight:700; font-size:0.75rem; opacity:0.8;"></p>
+
+        <div class="glass-card" onclick="forceShuffle()" style="cursor:pointer; border: 2px solid var(--accent); text-align: center;">
+            <div id="prog-fill"></div>
+            <p id="rank-label" style="margin:8px 0 0 0; font-weight:bold; font-size:0.75rem;">TAP TO SHUFFLE UNIVERSE 🔄</p>
+        </div>
+
+        <div class="glass-card">
+            <p style="font-size:0.6rem; color:var(--accent); font-weight:bold; margin:0;">ARABIC INSIGHT 🌙</p>
+            <div id="ar-p" style="font-family:'Noto Sans Arabic'; font-size:1.3rem; margin:5px 0;">أهلاً بك</div>
+            <p id="ar-t" style="font-size:0.8rem; opacity:0.8; margin:0;">Welcome</p>
+        </div>
+
+        <div class="glass-card" style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+            <p style="font-size:0.6rem; color:var(--accent); font-weight:bold; margin:0;">JUST THE WISDOM ✨</p>
+            <p id="q-txt" style="font-style:italic; font-size:0.95rem; margin:8px 0; line-height:1.4;">Tap to change gurl</p>
+        </div>
+    </div>
+
+    <div id="tasks" class="page">
+        <h1 style="font-family:'Bebas Neue'; margin:0 0 10px 0;">MISSIONS ⚔️</h1>
+        <div class="glass-card" style="margin-bottom:10px; text-align:center; border: 1px solid var(--accent);">
+            <div id="tick-motivation" style="font-weight:900; color:var(--accent); font-size:1.1rem;">GET IT DONE!</div>
+        </div>
+        <div id="list" style="overflow-y:auto; flex:1;"></div>
+    </div>
+
+    <div id="edit" class="page">
+        <h1 style="font-family:'Bebas Neue'; margin:0 0 10px 0;">HISTORY & SETTINGS ⚙️</h1>
+        <div class="glass-card" style="margin-bottom:10px;">
+            <input type="text" id="new-h" placeholder="Add Mission..." style="width:70%; padding:10px; border-radius:10px; border:none;">
+            <button onclick="addH()" style="width:25%; padding:10px; border-radius:10px; border:none; background:var(--accent); font-weight:900;">ADD</button>
+        </div>
+        <div class="glass-card" style="flex:1; overflow-y:auto;">
+            <p style="font-size:0.7rem; color:var(--accent); font-weight:bold; margin-bottom:10px;">PROGRESS LOG 📜</p>
+            <div id="history-list"></div>
+        </div>
+        <div id="edit-list" style="max-height:100px; overflow-y:auto; margin-top:10px;"></div>
+    </div>
+    <div id="vault" class="page">
+    <h1 style="font-family:'Bebas Neue'; margin:0 0 10px 0;">EXPENSE VAULT 💰</h1>
+    <div class="glass-card">
+        <p style="font-size:0.6rem; color:var(--accent); font-weight:bold; margin:0;">TOTAL SPENT TODAY</p>
+        <div id="day-total" class="exp-total">0.00</div>
+        <div style="display:flex; gap:5px;">
+            <input type="text" id="exp-name" placeholder="Item (e.g. Metro)" style="width:55%; padding:10px; border-radius:10px; border:none;">
+            <input type="number" id="exp-amt" placeholder="Amt" style="width:25%; padding:10px; border-radius:10px; border:none;">
+            <button onclick="addExp()" style="width:20%; border-radius:10px; border:none; background:var(--accent); font-weight:900;">+</button>
+            <button onclick="clearVault()" style="margin-top:20px; width:100%; background:transparent; border:1px solid rgba(255,255,255,0.2); color:white; padding:10px; border-radius:10px; font-size:0.7rem;">CLEAR ALL HISTORY🧹</button>
+        </div>
+    </div>
+    <div id="exp-list" style="margin-top:15px; overflow-y:auto; flex:1;"></div>
+</div>
+ 
+    
+</div>
+
+<div class="nav">
+    <div class="nav-btn active" onclick="nav(event,'home')">🏠</div>
+    <div class="nav-btn" onclick="nav(event,'tasks')">⚔️</div>
+    <div class="nav-btn" onclick="nav(event,'edit')">⚙️</div>
+    <div class="nav-btn" onclick="nav(event,'vault')">💵</div>
+</div>
+
+<script>
+    const API_KEY = "AIzaSyCM57aXe0AclhnbSGrBSu0wIL3m6tLItNg";
+    let habits = JSON.parse(localStorage.getItem('h')) || ["Daily Reading", " Completion", "Exercise", "Selfcare"];
+    let history = JSON.parse(localStorage.getItem('hist')) || [];
+    let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+
+    const characters = [
+         {n:"TANJIRO KAMADO 🎴", t:"The Protagonists", c:"#27ae60", b:"https://images.unsplash.com/photo-1614850523296-d8c1af93d400"},
+        {n:"NEZUKO KAMADO 🎋", t:"Blood Demon form", c:"#e84393", b:"https://images.unsplash.com/photo-1550684848-fac1c5b4e853"},
+        {n:"ZENITSU AGATSUMA ⚡", t:"Thunder King", c:"#f1c40f", b:"https://wallpapercave.com/wp/wp8256372.jpg"},
+        {n:"INOSUKE HASHIBIRA 🐗", t:"Beast Breathing", c:"#3498db", b:"https://images7.alphacoders.com/102/1025530.jpg"},
+        {n:"GIYU TOMIOKA 🌊", t:"Water Hashira", c:"#2980b9", b:"https://wallpaperaccess.com/full/1183188.jpg"},
+        {n:"SHINOBU KOCHO 🦋", t:"Insect Hashira", c:"#8e44ad", b:"https://images.unsplash.com/photo-1550684848-fac1c5b4e853"},
+        {n:"KYOUJURO RENGOKU 🔥", t:"Flame Hashira", c:"#e67e22", b:"https://images.alphacoders.com/102/1025530.jpg"},
+        {n:"MITSURI KANROJI 🍡", t:"Love Hashira", c:"#ff7979", b:"https://images.unsplash.com/photo-1618336753974-aae8e04506aa"},
+        {n:"OBANAI IGURO 🐍", t:"Serpent Hashira", c:"#2c3e50", b:"https://wallpaperaccess.com/full/1183188.jpg"},
+        {n:"SANEMI SHINAZUGAWA 🌪️", t:"Wind Hashira", c:"#bdc3c7", b:"https://images7.alphacoders.com/102/1025530.jpg"},
+        {n:"GYOMEI HIMEJIMA 📿", t:"Stone Hashira", c:"#7f8c8d", b:"https://wallpapercave.com/wp/wp8256372.jpg"},
+        {n:"MUICHIRO TOKITO 🌫️", t:"Mist Hashira", c:"#1abc9c", b:"https://images.unsplash.com/photo-1618336753974-aae8e04506aa"},
+        {n:"TENGEN UZUI 💎", t:"Sound Hashira", c:"#ecf0f1", b:"https://images.unsplash.com/photo-1614850523296-d8c1af93d400"},
+        {n:"MUZAN KIBUTSUJI 👁️", t:"Demon King", c:"#c0392b", b:"https://images.unsplash.com/photo-1550684848-fac1c5b4e853"},
+        {n:"RUI 🕸️", t:"Lower Moon Five", c:"#ecf0f1", b:"https://images7.alphacoders.com/102/1025530.jpg"},
+        {n:"AKAZA ❄️", t:"Upper Moon Three", c:"#ff6b6b", b:"https://wallpaperaccess.com/full/1183188.jpg"},
+        {n:"DOMA 🧊", t:"Upper Moon Two", c:"#dff9fb", b:"https://images.unsplash.com/photo-1618336753974-aae8e04506aa"},
+        // AOT
+        {n:"EREN YEAGER 🗝️", t:"The Mastermind", c:"#7d5a50", b:"https://wallpapercave.com/wp/wp8256372.jpg"},
+        {n:"MIKASA ACKERMAN 🧣", t:"The Protector", c:"#e74c3c", b:"https://images.alphacoders.com/102/1025530.jpg"},
+        {n:"ARMIN ARLERT 🐚", t:"The Strategist", c:"#f1c40f", b:"https://wallpaperaccess.com/full/1183188.jpg"},
+        {n:"LEVI ACKERMAN 🗡️", t:"Humanity's Strongest", c:"#2f3e2e", b:"https://images7.alphacoders.com/102/1025530.jpg"},
+        {n:"ERWIN SMITH 🐎", t:"Commander", c:"#95a5a6", b:"https://images.unsplash.com/photo-1614850523296-d8c1af93d400"},
+        {n:"HANGE ZOE 👓", t:"Section Commander", c:"#8e44ad", b:"https://images.unsplash.com/photo-1550684848-fac1c5b4e853"},
+        {n:"JEAN KIRSTEIN 🐎", t:"The Standard", c:"#d35400", b:"https://wallpapercave.com/wp/wp8256372.jpg"},
+        {n:"CONNIE SPRINGER 🦅", t:"Soldier", c:"#bdc3c7", b:"https://images7.alphacoders.com/102/1025530.jpg"},
+        {n:"SASHA BRAUS 🥔", t:"Potatoes!", c:"#e67e22", b:"https://images.unsplash.com/photo-1618336753974-aae8e04506aa"},
+        {n:"HISTORIA REISS 👑", t:"The Queen", c:"#f1c40f", b:"https://images.unsplash.com/photo-1614850523296-d8c1af93d400"},
+        {n:"ZEKE YEAGER 🐒", t:"Beast Titan", c:"#f39c12", b:"https://wallpaperaccess.com/full/1183188.jpg"},
+        {n:"ANNIE LEONHART 💎", t:"Female Titan", c:"#bdc3c7", b:"https://images7.alphacoders.com/102/1025530.jpg"},
+        {n:"REINER BRAUN 🛡️", t:"Armored Titan", c:"#95a5a6", b:"https://wallpapercave.com/wp/wp8256372.jpg"},
+        {n:"BERTHOLDT HOOVER ☁️", t:"Colossal Titan", c:"#ecf0f1", b:"https://images.unsplash.com/photo-1550684848-fac1c5b4e853"},
+        {n:"PIECK FINGER 🛒", t:"Cart Titan", c:"#7f8c8d", b:"https://images.unsplash.com/photo-1618336753974-aae8e04506aa"},
+        {n:"YMIR 🏔️", t:"Jaws", c:"#2c3e50", b:"https://images.unsplash.com/photo-1614850523296-d8c1af93d400"},
+        {n:"Itachi 🏔️", t:"Sacrifice", c:"#2c3e51", b:"https://images.unsplash.com/photo-1614850523296-d8c1af93d400"},
+        {n:"Naruto 🏔️", t:"Perseverance", c:"#2c3e50", b:"https://images.unsplash.com/photo-1614850523296-d8c1af93d400"},
+        // BTS
+        {n:"RM 🐨", t:"The Leader", c:"#2ecc71", b:"https://images.unsplash.com/photo-1614850523296-d8c1af93d400"},
+        {n:"JIN 🐹", t:"Moon", c:"#fab1a0", b:"https://images.unsplash.com/photo-1550684848-fac1c5b4e853"},
+        {n:"SUGA 🐱", t:"Savage Soul", c:"#81ecec", b:"https://images.unsplash.com/photo-1614850523296-d8c1af93d400"},
+        {n:"JHOPE 🐿️", t:"Sunshine", c:"#ffeaa7", b:"https://images.unsplash.com/photo-1550684848-fac1c5b4e853"},
+        {n:"JIMIN 🐥", t:"Serendipity Soul", c:"#fd79a8", b:"https://images.unsplash.com/photo-1618336753974-aae8e04506aa"},
+        {n:"V 🐻", t:"Winter bear", c:"#a29bfe", b:"https://images.unsplash.com/photo-1618336753974-aae8e04506aa"},
+        {n:"JUNGKOOK 🐰", t:"Golden maknae", c:"#74b9ff", b:"https://images.unsplash.com/photo-1614850523296-d8c1af93d400"}
+    ];
+
+    const backupQuotes = [
+        "Don't be trapped in someone else's dream. - V 🐻",
+        "Dedicating your heart is the only way. - Erwin 🐎",
+        "Set your heart ablaze! - Rengoku 🔥",
+        "Future's gonna be okay. - Suga 🐱",
+        "Live your life. It’s yours anyway. - Suga 🐱",
+        "I'll keep moving forward until I destroy my enemies. - Eren 🗝️",
+        "If you can’t find a reason to fight, then you shouldn’t be fighting. - Akaza ❄️",
+        "Borahae! 💜",
+        "Even if we die, even after we die, we keep moving forward. - Eren 🗝️",
+        "The world is cruel, but also very beautiful. - Mikasa 🧣",
+        "Give up on your dreams and die. - Levi ⚔️",
+        "A lesson without pain is meaningless. - Edward 🔥",
+        "Hard work is worthless for those that don’t believe in themselves. - Naruto 🍥",
+        "No matter how deep the night, it always turns to day. - Brook 🎻",
+        "Power comes in response to a need, not a desire. - Goku 💥",
+        "If you don’t take risks, you can’t create a future. - Luffy 🏴☠️",
+        "I want to be stronger. - Tanjiro 🌊",
+        "No matter how many people you lose, you have no choice but to go on. - Tanjiro 🌸",
+        "Fear is not evil. It tells you what your weakness is. - Gildarts ⚡",
+        "A person grows when they’re able to overcome hardships. - Jiraiya 🐸",
+        "If you don’t like your destiny, don’t accept it. - Naruto 🍃",
+        "Knowing you’re different is only the beginning. - Itachi 🔴",
+        "Wake up to reality. Nothing ever goes as planned. - Madara 🌑",
+        "Effort makes you. You will regret someday if you don’t do your best now. - Jungkook 🐰",
+        "Teamwork makes the dream work. - RM 🐨",
+        "Don’t be afraid, don’t worry yourself. The end and beginning are connected. - Jin 🌙",
+        "Go on your path, even if you live for a day. - Jimin 🐥",
+        "I’d rather die than live without passion. - V 🐻",
+        "Dream, though your beginnings may be humble. - Suga 🐱",
+        "It’s okay to not have a dream. - Suga 🐱",
+        "If you want to love others, I think you should love yourself first. - RM 💜",
+        "Your presence can give happiness. - Jin ✨",
+        "Never give up on a dream you’ve been chasing. - J-Hope ☀️",
+        "The only thing we’re allowed to do is believe. - Levi Ackerman ⚔️",
+        "You can’t change anything unless you discard something. - Armin Arlert 📖",
+        "This world is merciless, but also kind. - Mikasa Ackerman 🧣",
+        "If you win, you live. If you lose, you die. - Eren Yeager 🔥",
+        "I don’t know what’s right anymore. - Reiner Braun 🛡️",
+        "No matter what happens, keep moving forward. - Eren Yeager 🗝️",
+        "Protect those you care about. - Tanjiro Kamado 🌸",
+        "Feel the rage, the powerful rage. - Zenitsu Agatsuma ⚡",
+        "I will never give up. - Inosuke Hashibira 🐗",
+        "Humans are to be protected and saved. - Tanjiro Kamado 🗡️",
+        "Even demons were once human. - Tanjiro Kamado 🌙",
+        "Kindness is strength. - Nezuko Kamado 🌸",
+        "Your weakness is your strength. - Zenitsu Agatsuma ⚡",
+        "Fight for your life. - Kyojuro Rengoku 🔥",
+        "No matter how broken you are, stand up. - Tanjiro Kamado 🌊",
+        "Stay true to yourself. 💫",
+        "Your story is still being written. 📖",
+        "You are stronger than you think. 🔥",
+        "Let your scars become your strength. ✨",
+        "Keep going, no matter what. 💜",
+        "Even the smallest step matters. 👣",
+        "Don’t lose yourself in the chaos. 🌙",
+        "Shine even in the darkest times. 🌌",
+        "You survived for a reason. 🖤",
+        "This is your journey, own it. 👑",
+    ];
+
+    const backupArabic = [
+        ["الحياة ليست سباقاً بل رحلة", "Life is not a race but a journey"],
+        ["الأشياء الجميلة تأتي بصمت", "Beautiful things come quietly"],
+        ["في كل تأخير حكمة", "In every delay, there is wisdom"],
+        ["ربما الطريق الصعب هو الصحيح", "Maybe the hard path is the right one"],
+        ["كل شيء يحدث لسبب", "Everything happens for a reason"],
+        ["أحياناً عليك أن تضيع لتجد نفسك", "Sometimes you must get lost to find yourself"],
+        ["الصبر مفتاح الفرج", "Patience is the key to relief"],
+        ["القلب يعرف ما يريد", "The heart knows what it wants"],
+        ["الهدوء قوة لا يفهمها الجميع", "Silence is a power not everyone understands"],
+        ["الأمل لا يموت", "Hope never dies"],
+        ["العقل الهادئ يرى بوضوح", "A calm mind sees clearly"],
+        ["البداية دائماً صعبة", "The beginning is always hard"],
+        ["النهايات تحمل بدايات جديدة", "Endings carry new beginnings"],
+        ["الحلم يحتاج شجاعة", "Dreams require courage"],
+        ["لا شيء يدوم إلا التغيير", "Nothing lasts except change"],
+        ["الوقت يعلمنا كل شيء", "Time teaches us everything"],
+        ["القلوب الصادقة لا تخيب", "Sincere hearts don’t fail"],
+        ["النية الطيبة طريق للراحة", "Good intentions lead to peace"],
+        ["العزلة أحياناً راحة", "Solitude is sometimes peace"],
+        ["كل يوم فرصة جديدة", "Every day is a new chance"],
+        ["الابتسامة لغة لا تحتاج ترجمة", "A smile needs no translation"],
+        ["الحياة تعطي دروساً بصمت", "Life gives lessons quietly"],
+        ["القوة في الاستمرار", "Strength is in continuing"],
+        ["الضعف بداية القوة", "Weakness is the start of strength"],
+        ["الهدوء أعمق من الكلام", "Silence is deeper than words"],
+        ["ليس كل ما يُرى يُفهم", "Not everything seen is understood"],
+        ["القلب الصبور لا يُهزم", "A patient heart is never defeated"],
+        ["كل سقوط بداية نهوض", "Every fall is a rise"],
+        ["العتمة تسبق النور", "Darkness comes before light"],
+        ["النجاح يحتاج وقتاً", "Success takes time"],
+        ["الحقيقة تظهر مع الوقت", "Truth appears with time"],
+        ["الذكريات لا تموت", "Memories don’t die"],
+        ["الألم يعلمنا القوة", "Pain teaches strength"],
+        ["الأشياء البسيطة هي الأجمل", "Simple things are the most beautiful"],
+        ["العقل القوي لا ينكسر", "A strong mind doesn’t break"],
+        ["الراحة في القبول", "Peace is in acceptance"],
+        ["البحث عن الذات رحلة", "Finding yourself is a journey"],
+        ["الأيام تتغير وكذلك نحن", "Days change and so do we"],
+        ["الحياة مليئة بالمفاجآت", "Life is full of surprises"],
+        ["الصمت أحياناً أفضل رد", "Silence is sometimes the best answer"],
+        ["كل شيء يبدأ بفكرة", "Everything starts with an idea"],
+        ["الروح تحتاج سلام", "The soul needs peace"],
+        ["التجارب تصنع الإنسان", "Experiences shape a person"],
+        ["الأمل بداية كل شيء", "Hope is the beginning of everything"],
+        ["الطريق يعلمك أكثر من الوصول", "The journey teaches more than the destination"],
+        ["الأشياء الحقيقية تبقى", "Real things stay"],
+        ["القلب يرى ما لا يُرى", "The heart sees what cannot be seen"],
+        ["العقل يفهم بعد الوقت", "The mind understands with time"],
+        ["الحياة تتغير في لحظة", "Life changes in a moment"],
+        ["كل نهاية تحمل بداية", "Every ending holds a beginning"]
+        ["صبراً جميل", "Beautiful Patience"],
+        ["كن قوياً", "Stay Strong"],
+        ["ثق بنفسك", "Trust Yourself"],
+        ["لا تستسلم", "Never Give Up"]
+    ];
+
+    function forceShuffle() {
+        // 1. Instant Character Change
+        const char = characters[Math.floor(Math.random() * characters.length)];
+        document.documentElement.style.setProperty('--accent', char.c);
+        document.getElementById('char-name').innerText = char.n;
+        document.getElementById('char-title').innerText = char.t;
+       
+        // 2. Instant Text Change (Backups first so it's IMMEDIATE)
+        const q = backupQuotes[Math.floor(Math.random() * backupQuotes.length)];
+        const a = backupArabic[Math.floor(Math.random() * backupArabic.length)];
+        document.getElementById('q-txt').innerText = q;
+        document.getElementById('ar-p').innerText = a[0];
+        document.getElementById('ar-t').innerText = a[1];
+
+        // 3. Try Background AI Refresh
+        fetchAI();
+    }
+
+    async function fetchAI() {
+        try {
+            const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ contents: [{ parts: [{ text: "Short Arabic phrase | Translation | 1 Random Quote from BTS, AOT, or Demon Slayer. Use emojis. Split with |" }] }] })
+            });
+            const d = await r.json();
+            const res = d.candidates[0].content.parts[0].text.split('|');
+            if(res.length >= 3) {
+                document.getElementById('ar-p').innerText = res[0].trim();
+                document.getElementById('ar-t').innerText = res[1].trim();
+                document.getElementById('q-txt').innerText = res[2].trim();
+            }
+        } catch(e) { console.log("AI Offline - Backups working."); }
+    }
+
+    function tick() {
+        const checks = document.querySelectorAll('.check');
+        const done = document.querySelectorAll('.check:checked').length;
+        const perc = checks.length > 0 ? Math.floor((done/checks.length)*100) : 0;
+        document.getElementById('prog-fill').style.width = perc + "%";
+        document.getElementById('rank-label').innerText = `POWER LEVEL: ${perc}%`;
+       
+        const mots = ["Borahae! 💜", "Shinzo wo Sasageyo! 🕊️", "Focus! ⚡", "Ablaze! 🔥", "Susume! 🗝️", "Tatakae! ⚔️", "Set Your Heart Ablaze 🔥", "Never Giveup ⚔️", "Burn Your Soul 🔥", "Never Yield ⚡", "Go Beyond Limits 🌌", 
+            
+         ];
+        document.getElementById('tick-motivation').innerText = mots[Math.floor(Math.random()*mots.length)];
+
+        if(perc === 100) {
+            confetti({ particleCount: 100 });
+            saveHistory(perc);
+        }
+    }
+
+    function saveHistory(p) {
+        const date = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+        if(!history.find(i => i.date === date)) {
+            history.push({ date: date, p: p });
+            localStorage.setItem('hist', JSON.stringify(history));
+            renderHistory();
+        }
+    }
+
+    function renderHistory() {
+        document.getElementById('history-list').innerHTML = history.slice().reverse().map(i => `
+            <div class="history-item"><span>📅 ${i.date}</span><b>${i.p}% DONE</b></div>
+        `).join('');
+    }
+
+    function nav(e, p) {
+        document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
+        document.getElementById(p).classList.add('active');
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        if(p === 'home') forceShuffle();
+    }
+
+    function render() {
+        document.getElementById('list').innerHTML = habits.map(h => `<div class="habit-row"><span>${h}</span><input type="checkbox" class="check" onchange="tick()"></div>`).join('');
+        document.getElementById('edit-list').innerHTML = habits.map((h, i) => `<div class="habit-row" style="background:rgba(255,255,255,0.1); color:white; font-size:0.8rem;"><span>${h}</span><button onclick="remH(${i})" style="color:red; background:none; border:none; font-weight:bold;">X</button></div>`).join('');
+    }
+
+    function addH() { const v = document.getElementById('new-h').value; if(v){ habits.push(v); localStorage.setItem('h', JSON.stringify(habits)); render(); document.getElementById('new-h').value=""; } }
+    function remH(i) { habits.splice(i,1); localStorage.setItem('h', JSON.stringify(habits)); render(); }
+    function setW() { const w = prompt("Current Weight?"); if(w){ localStorage.setItem('w', w); document.getElementById('w-val').innerText = w; } }
+    function addExp() {
+        const name = document.getElementById('exp-name').value;
+        const amt = parseFloat(document.getElementById('exp-amt').value);
+    
+        if(name && !isNaN(amt)) {
+            expenses.push({ name, amt, date: new Date().toLocaleDateString() });
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+            document.getElementById('exp-name').value = "";
+            document.getElementById('exp-amt').value = "";
+            renderExpenses();
+        }
+    }
+    
+    
+    function renderExpenses() {
+        const list = document.getElementById('exp-list');
+        const totalDisp = document.getElementById('day-total');
+        const today = new Date().toLocaleDateString();
+        
+        let dayTotal = 0;
+        
+        // 1. Calculate today's total for the main big display
+        expenses.forEach(e => {
+            if(e.date === today) dayTotal += e.amt;
+        });
+        totalDisp.innerText = dayTotal.toFixed(2);
+    
+        // 2. Group all expenses by date
+        const grouped = expenses.reduce((acc, exp) => {
+            if (!acc[exp.date]) acc[exp.date] = { items: [], total: 0 };
+            acc[exp.date].items.push(exp);
+            acc[exp.date].total += exp.amt;
+            return acc;
+        }, {});
+    
+        // 3. Generate the HTML (Latest dates at the top)
+        const historyHTML = Object.keys(grouped).sort((a, b) => {
+            // This sorting ensures the most recent dates are always first
+            return new Date(b.split('/').reverse().join('-')) - new Date(a.split('/').reverse().join('-'));
+        }).map(date => {
+        const dayData = grouped[date];
+        const itemsHTML = dayData.items.map(i => 
+                `<div class="exp-row"><span>${i.name}</span><b>${i.amt}</b></div>`
+
+            ).join('');
+    
+            return `
+                <div class="history-section" style="margin-bottom: 20px;">
+                    <div class="history-date-header">
+                        ${date === today ? "TODAY" : date}
+                        Total: ${dayData.total.toFixed(2)}</span>
+                    </div>
+                    ${itemsHTML}
+                </div>
+            `;
+        }).join('');
+    
+        list.innerHTML = historyHTML || `<p style="text-align:center; opacity:0.5;">No history yet!</p>`;
+    }
+    
+ 
+ 
+ 
+    function initialLoad() {
+        render();
+        renderHistory();
+        renderExpenses(); // Add this line
+    }
+    function clearVault() {
+        if(confirm("Delete all expense history?")) {
+            expenses = [];
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+            renderExpenses();
+        }
+    }
+ 
+    forceShuffle(); initialLoad();
+    document.getElementById('w-val').innerText = localStorage.getItem('w') || "--";
+</script>
+</body>
+</html>
