@@ -48,7 +48,7 @@
             <div class="glass-card" onclick="location.reload()" style="text-align:center; padding:30px 10px;">🔄<br>REFRESH</div>
         </div>
     </div> -->
-    <div id="hub" class="pageactive" style="padding: 20px;">
+    <div id="hub" class="page active" style="padding: 20px;">
         <h1 id="greeting" style="font-family:'Bebas Neue'; color:var(--accent); font-size:3rem; text-align:center; margin-bottom: 5px; text-shadow: 0 0 15px var(--accent);">COMMAND CENTER</h1>
         <p style="text-align:center; color:rgba(255,255,255,0.5); font-size:0.8rem; margin-bottom:30px; letter-spacing:2px;">WHAT'S ON MIND </p>
     
@@ -70,7 +70,7 @@
             </div>
     
             <div class="glass-card hub-btn" onclick="openSection('vault')" style="border-color: #F7C5CC;">
-                <span style="font-size:1.5rem;">💰</span><br>
+                <span style="font-size:1.5rem;">🔏</span><br>
                 <span style="font-size:0.7rem; font-weight:bold; letter-spacing:1px; color:#F7C5CC;">VAULT</span>
             </div>
             <div class="glass-card hub-btn" onclick="location.reload()" style="border-color:  #89ABE3;">
@@ -554,8 +554,8 @@
             else g.innerText = "EVENING LADY";
     }
     updateGreeting();
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    
+/*     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+ */    
 </script>
 </body>
 </html>
