@@ -9,9 +9,9 @@
     <style>
         :root { --accent: #ff4757; --glass: rgba(0, 0, 0, 0.93); }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; font-family: 'Quicksand', sans-serif; height: 100vh; background: #000; color: white; overflow: hidden; display: flex; flex-direction: column; }
+        body { margin: 0; font-family: 'Quicksand', sans-serif; min-height: 100vh; background: #000; color: white; overflow-x: hidden; display: flex; flex-direction: column; }
         #bg-image { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background-size: cover; background-position: center; filter: brightness(0.2); transition: 0.5s; }
-        .container { flex: 1; padding: 15px; width: 100%; max-width: 450px; margin: auto; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+        .container { flex: 1; padding: 15px; width: 100%; max-width: 450px; margin: auto; display: flex; flex-direction: column; gap: 8px; }
         .page { display: none; height: 100%; flex-direction: column; }
         .page.active { display: flex; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
