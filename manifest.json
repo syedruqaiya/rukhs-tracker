@@ -1,0 +1,15 @@
+{
+  "short_name": "Tracker",
+  "name": "Rukhs Personal Tracker",
+  "display": "standalone",
+  "start_url": "index.html",
+  "background_color": "#000000",
+  "theme_color": "#ff4757",
+  "icons": [
+    {
+"src": "https://via.placeholder.com/192",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ]
+}
