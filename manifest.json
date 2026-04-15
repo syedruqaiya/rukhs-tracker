@@ -3,7 +3,7 @@
   "name": "Rukhs Personal Tracker",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2583/2583344.png",
+      "src": "icon.png",
       "type": "image/png",
       "sizes": "512x512"
     }
