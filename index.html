@@ -42,16 +42,6 @@
 
 <div class="container">
 
-   <!--  <div id="hub" class="page active">
-        <h1 style="font-family:'Bebas Neue'; color:var(--accent); font-size:2.5rem; text-align:center;">COMMAND CENTER</h1>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-top:20px;">
-            <div class="glass-card" onclick="openSection('home')" style="text-align:center; padding:30px 10px;">🏠<br>DASHBOARD</div>
-            <div class="glass-card" onclick="openSection('tasks')" style="text-align:center; padding:30px 10px;">⚔️<br>MISSIONS</div>
-            <div class="glass-card" onclick="openSection('edit')" style="text-align:center; padding:30px 10px;">⚙️<br>HISTORY</div>
-            <div class="glass-card" onclick="openSection('vault')" style="text-align:center; padding:30px 10px;">🔏<br>VAULT</div>
-            <div class="glass-card" onclick="location.reload()" style="text-align:center; padding:30px 10px;">🔄<br>REFRESH</div>
-        </div>
-    </div> -->
     <div id="hub" class="page active" style="padding: 20px;">
         <h1 id="greeting" style="font-family:'Bebas Neue'; color:var(--accent); font-size:3rem; text-align:center; margin-bottom: 5px; text-shadow: 0 0 15px var(--accent);">COMMAND CENTER</h1>
         <p style="text-align:center; color:rgba(255,255,255,0.5); font-size:0.8rem; margin-bottom:30px; letter-spacing:2px;">WHAT'S ON MIND </p>
@@ -127,6 +117,22 @@
         <div class="glass-card" style="margin-bottom:10px;">
             <input type="text" id="new-h" placeholder="Add Mission..." style="width:70%; padding:10px; border-radius:10px; border:none;">
             <button onclick="addH()" style="width:25%; padding:10px; border-radius:10px; border:none; background:var(--accent); font-weight:900;">ADD</button>
+        </div>
+        <div class="glass-card" style="margin-bottom:10px; border: 1px solid #74b9ff;">
+            <p style="font-size:0.7rem; color:#74b9ff; font-weight:bold; margin-bottom:5px;">MISSION REMINDER 🔔</p>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <input type="date" id="rem-date" style="padding:10px; border-radius:10px; border:none; background:rgba(255,255,255,0.1); color:white;">
+                
+                <div style="display:flex; gap:5px;">
+                    <input type="time" id="rem-time" style="flex:2; padding:10px; border-radius:10px; border:none;">
+                    <button onclick="setReminder()" style="flex:1; background:#74b9ff; border:none; border-radius:10px; font-weight:900;">SET</button>
+                </div>
+                
+                <button onclick="clearReminder()" style="width:100%; background:rgba(255,71,87,0.2); color:#ff4757; 
+                    border:1px solid #ff4757; border-radius:10px; padding:5px; font-size:0.7rem; font-weight:bold;">
+                    DELETE CURRENT REMINDER
+                </button>
+            </div>
         </div>
         <div class="glass-card" style="flex:1; overflow-y:auto;">
             <p style="font-size:0.7rem; color:var(--accent); font-weight:bold; margin-bottom:10px;">PROGRESS LOG 📜</p>
@@ -377,29 +383,43 @@
 
     function tick() {
         const checks = document.querySelectorAll('.check');
-        const done = document.querySelectorAll('.check:checked').length;
-        const perc = checks.length > 0 ? Math.floor((done/checks.length)*100) : 0;
+        const checkboxes = Array.from(checks);
+        const done = checkboxes.filter(c => c.checked).length;
+        const perc = checks.length > 0 ? Math.floor((done / checks.length) * 100) : 0;
+        
+        // 1. Update the UI Progress
         document.getElementById('prog-fill').style.width = perc + "%";
         document.getElementById('rank-label').innerText = `POWER LEVEL: ${perc}%`;
-       
-        const mots = ["Borahae! 💜", "Shinzo wo Sasageyo! 🕊️", "Focus! ⚡", "Ablaze! 🔥", "Susume! 🗝️", "Tatakae! ⚔️", "Set Your Heart Ablaze 🔥", "Never Giveup ⚔️", "Burn Your Soul 🔥", "Never Yield ⚡", "Go Beyond Limits 🌌", 
-            
-         ];
-        document.getElementById('tick-motivation').innerText = mots[Math.floor(Math.random()*mots.length)];
-
+    
+        // 2. The Motivation Phrases (mots)
+        const mots = ["Borahae! 💜", "Shinzo wo Sasageyo! 🕊️", "Focus! ⚡", "Ablaze! 🔥", "Susume! 🗝️", "Tatakae! ⚔️"];
+        document.getElementById('tick-motivation').innerText = mots[Math.floor(Math.random() * mots.length)];
+    
+        // 3. Persistent Ticks (Save the checkbox states)
+        const states = checkboxes.map(c => c.checked);
+        localStorage.setItem('mission_states', JSON.stringify(states));
+    
+        // 4. Confetti only at max power
         if(perc === 100) {
             confetti({ particleCount: 100 });
-            saveHistory(perc);
         }
+ 
+        // 5. Update History (Whether it's 25%, 50%, or 100%)
+        saveHistory(perc); 
     }
+ 
 
     function saveHistory(p) {
         const date = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-        if(!history.find(i => i.date === date)) {
+        const existingIndex = history.findIndex(i => i.date === date);
+    
+        if (existingIndex !== -1) {
+            history[existingIndex].p = p;
+        } else {
             history.push({ date: date, p: p });
-            localStorage.setItem('hist', JSON.stringify(history));
-            renderHistory();
         }
+        localStorage.setItem('hist', JSON.stringify(history));
+        renderHistory();
     }
 
     function renderHistory() {
@@ -407,7 +427,7 @@
             <div class="history-item"><span>📅 ${i.date}</span><b>${i.p}% DONE</b></div>
         `).join('');
     }
-
+    
     function nav(e, p) {
         document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
         document.getElementById(p).classList.add('active');
@@ -417,9 +437,25 @@
     }
 
     function render() {
-        document.getElementById('list').innerHTML = habits.map(h => `<div class="habit-row"><span>${h}</span><input type="checkbox" class="check" onchange="tick()"></div>`).join('');
-        document.getElementById('edit-list').innerHTML = habits.map((h, i) => `<div class="habit-row" style="background:rgba(255,255,255,0.1); color:white; font-size:0.8rem;"><span>${h}</span><button onclick="remH(${i})" style="color:red; background:none; border:none; font-weight:bold;">X</button></div>`).join('');
+        // This line looks into your phone's memory for saved ticks
+        const savedStates = JSON.parse(localStorage.getItem('mission_states')) || [];
+        
+        document.getElementById('list').innerHTML = habits.map((h, i) => `
+            <div class="habit-row">
+                <span>${h}</span>
+                <input type="checkbox" class="check" onchange="tick()" ${savedStates[i] ? 'checked' : ''}>
+            </div>
+        `).join('');
+        
+         document.getElementById('edit-list').innerHTML = habits.map((h, i) => `
+            <div class="habit-row" style="background:rgba(255,255,255,0.1); color:white; font-size:0.8rem;">
+                <span>${h}</span>
+                <button onclick="remH(${i})" style="color:red; background:none; border:none; font-weight:bold;">X</button>
+            </div>
+        `).join('');
     }
+
+    
 
     function addH() { const v = document.getElementById('new-h').value; if(v){ habits.push(v); localStorage.setItem('h', JSON.stringify(habits)); render(); document.getElementById('new-h').value=""; } }
     function remH(i) { habits.splice(i,1); localStorage.setItem('h', JSON.stringify(habits)); render(); }
@@ -437,8 +473,8 @@
         }
     }
     
-    
-    function renderExpenses() {
+
+     function renderExpenses() {
         const list = document.getElementById('exp-list');
         const totalDisp = document.getElementById('day-total');
         const today = new Date().toLocaleDateString();
@@ -465,10 +501,16 @@
             return new Date(b.split('/').reverse().join('-')) - new Date(a.split('/').reverse().join('-'));
         }).map(date => {
         const dayData = grouped[date];
-        const itemsHTML = dayData.items.map(i => 
-                `<div class="exp-row"><span>${i.name}</span><b>${i.amt}</b></div>`
-
-            ).join('');
+        const itemsHTML = dayData.items.map((i) => {
+            // Find the original index to delete correctly
+            const originalIdx = expenses.indexOf(i);
+            return `<div class="exp-row">
+                ${i.name}</span>
+                <b>${i.amt} <span onclick="deleteExp(${originalIdx})" style="color:var(--accent); 
+                    margin-left:10px; 
+                    cursor:pointer;">✕</span></b>
+            </div>`;
+        }).join('');
     
             return `
                 <div class="history-section" style="margin-bottom: 20px;">
@@ -483,15 +525,24 @@
     
         list.innerHTML = historyHTML || `<p style="text-align:center; opacity:0.5;">No history yet!</p>`;
     }
-    
- 
  
  
     function initialLoad() {
+        const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+        const lastOpen = localStorage.getItem('last_open');
+    
+        if (lastOpen !== today) {
+            localStorage.removeItem('mission_states'); // Clear ticks for new day
+            localStorage.setItem('last_open', today);
+        }
+    
         render();
         renderHistory();
-        renderExpenses(); // Add this line
+        renderExpenses();
+        renderEvents();
+        tick(); // Sync progress bar on load
     }
+    
     function clearVault() {
         if(confirm("Delete all expense history?")) {
             expenses = [];
@@ -549,6 +600,62 @@
         }
     }
     goHub();
+
+    function setReminder() {
+        const time = document.getElementById('rem-time').value;
+        const date = document.getElementById('rem-date').value; // Optional date
+    
+        if(time) {
+            const reminderData = { time: time, date: date };
+            localStorage.setItem('mission_rem', JSON.stringify(reminderData));
+            
+            Notification.requestPermission().then(p => {
+                if(p === 'granted') alert(`Reminder set for ${date ? date : 'Every Day'} at ${time}`);
+            });
+        }
+    }
+    
+    function clearReminder() {
+        if(confirm("Delete the current reminder?")) {
+            localStorage.removeItem('mission_rem');
+            alert("Reminder deleted.");
+        }
+    }
+    
+    // Check for reminder every minute
+    setInterval(() => {
+        const rawData = localStorage.getItem('mission_rem');
+        if (!rawData) return; // Do nothing if no reminder is set
+    
+        const reminder = JSON.parse(rawData);
+        const now = new Date();
+        
+        // Format current time and date to match the inputs
+        const curTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        const curDate = now.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    
+        // Logic:
+        // 1. If no date is set, it rings every day at that time.
+        // 2. If a date IS set, it only rings if the date matches today.
+        if (curTime === reminder.time) {
+            if (!reminder.date || reminder.date === curDate) {
+                new Notification("Rukhs Tracker", {
+                    body: "Commander, your missions await! ⚔️",
+                    icon: "icon.png"
+                });
+            }
+        }
+    }, 60000);
+    
+
+    function deleteExp(globalIndex) {
+        if(confirm("Remove this expense?")) {
+            expenses.splice(globalIndex, 1);
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+            renderExpenses();
+        }
+    }
+
     function updateGreeting() {
         const hr = new Date().getHours();
         const g =
